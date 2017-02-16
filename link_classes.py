@@ -84,7 +84,23 @@ class LinkDatabase(object):
 if __name__ == '__main__':
     links = []
     link_db = LinkDatabase()
-
+    link_headers = ["linkPVID",
+                    "refNodeID",
+                    "nrefNodeID",
+                    "length",
+                    "functionalClass",
+                    "directionOfTravel",
+                    "speedCategory",
+                    "fromRefSpeedLimit",
+                    "toRefSpeedLimit",
+                    "fromRefNumLanes",
+                    "toRefNumLanes",
+                    "multiDigitized",
+                    "urban",
+                    "timeZone",
+                    "shapeInfo",
+                    "curvatureInfo",
+                    "slopeInfo"]
     with open(os.path.join(DATA_DIR, "Partition6467LinkData.csv"), 'r') as csvfile:
         rdr = csv.DictReader(csvfile, delimiter=',', fieldnames=link_headers)
         for r in rdr:
