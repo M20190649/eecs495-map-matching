@@ -59,7 +59,7 @@ class LinkDatabase(object):
         links_to_return = []
         for i in [-0.1, 0, 0.1]:
             for j in [-0.1, 0, 0.1]:
-                links_to_return += self.link_dict[(str(rounded_lat+i), str(rounded_lon+1))]
+                links_to_return += self.link_dict[(str(rounded_lat+i), str(rounded_lon+j))]
         return links_to_return
 
     def insert_link(self, road_link):
