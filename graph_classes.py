@@ -92,6 +92,6 @@ if __name__ == '__main__':
                                               r['linkPVID'],
                                               r['nrefNodeID']))
 
-for k, v in road_graph.nodes.items():
-    if len(v.neighbors) > 0:
-        print(k, v.neighbors)
+    for k, v in road_graph.nodes.items():
+        if len(v.neighbors) > 0:
+            print(k, v.neighbors)
