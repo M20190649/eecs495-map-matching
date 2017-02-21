@@ -8,6 +8,16 @@ We use `Python 3.6` with the `conda` package manager. To install this, we recomm
 ### Create a conda env with required packages
 Open Terminal and navigate to the project folder. Run `conda create --name probe-data -f environment.yml` to create a new conda env and install all the required packages for our project. Then, run `source activate probe-data` to start the virtual environment. Note that you will need to source the environment each time you wish to use or view our code.
 
+### Setup API Keys
+We use the [Google Maps API](https://developers.google.com/maps/documentation/javascript/get-api-key) to plot our probe data and their matched links on a map. In order to pass the required keys to our code, create `config.json` in the root of the project and populate with the following information:
+
+```
+{
+   "google-maps-key": "YOUR_API_KEY"
+}
+```
+where `YOUR_API_KEY` is from the link above.
+
 ### Working with Jupyter Notebooks
 We have provided two notebooks to document our thought process:
 
