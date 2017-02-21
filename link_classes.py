@@ -60,12 +60,12 @@ class LinkDatabase(object):
         rounded_lon = round(probe_lon, ndigits=1)
 
         links_to_return = []
-        for i in [-0.01, 0, 0.01]:
-            for j in [-0.01, 0, 0.01]:
+        for i in [-0.1, 0, 0.1]:
+            for j in [-0.1, 0, 0.1]:
                 try:
-                    links_to_return += self.link_dict[(str(round(rounded_lat+i, ndigits=2)), str(round(rounded_lon+j, ndigits=2)))]
+                    links_to_return += self.link_dict[(str(round(rounded_lat + i, ndigits=1)), str(round(rounded_lon + j, ndigits=1)))]
                 except KeyError:
-                    pass
+                    print('keyerror')
         return links_to_return
 
     def insert_link(self, road_link):
