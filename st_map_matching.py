@@ -207,7 +207,7 @@ def temporal_analysis(p_prev, p_curr, c_prev, c_curr, speed_prev, speed_curr, de
     Output:
         (float): temporal measurment value
     """
-    avg_speed = haversine(p_prev, p_curr) / delta_t
+    avg_speed = haversine(p_prev, p_curr) / delta_t + 0.0000000001
     return cosine_dist(np.array([avg_speed, avg_speed]), np.array([speed_prev, speed_curr]))
 
 def st_function(p_prev, p_curr, c_prev, c_curr, speed_prev, speed_curr, delta_t):
