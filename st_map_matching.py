@@ -27,7 +27,14 @@ import dist_functions as dist
 DATA_DIR = 'probe_data_map_matching'
 
 FRAME = nv.FrameE(a=6371e3, f=0)
-
+probe_headers = ['sampleID',
+                 'dateTime',
+                 'sourceCode',
+                 'latitude',
+                 'longitude',
+                 'altitude',
+                 'speed',
+                 'heading']
 probe_data = pd.read_csv(os.path.join(DATA_DIR, 'Partition6467ProbePoints.csv'), header=None, names=probe_headers)
 probe_data.drop_duplicates(inplace=True)
 probe_data['id'] = probe_data['sampleID'].map(str) + '_' + probe_data['dateTime']
