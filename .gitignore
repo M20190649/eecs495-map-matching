@@ -90,3 +90,10 @@ ENV/
 
 # Data Files
 *.csv
+*.pickle
+
+# Graphs
+graphs/*
+
+# API Keys
+config.json
