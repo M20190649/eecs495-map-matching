@@ -23,12 +23,13 @@ import graph_classes as graph
 import dist_functions as dist
 
 # Constants
-DATA_DIR = '../data'
+#DATA_DIR = '../data'
+DATA_DIR = 'probe_data_map_matching'
 
-GOOGLE_MAPS_KEY = ''
-with open('config.json') as data_file:
-    data = json.load(data_file)
-    GOOGLE_MAPS_KEY = data['google-maps-key']
+# GOOGLE_MAPS_KEY = ''
+# with open('config.json') as data_file:
+#     data = json.load(data_file)
+#     GOOGLE_MAPS_KEY = data['google-maps-key']
 
 FRAME = nv.FrameE(a=6371e3, f=0)
 
@@ -360,12 +361,15 @@ def find_matched_sequence(candidates):
 
     # compute path
     r_list = []
-    c = max(f[candidate_count - 1], key=f[candidate_count - 1].get)
-    for i in range(candidate_count - 1, 0, -1):
+    try:
+        c = max(f[candidate_count - 1], key=f[candidate_count - 1].get)
+        for i in range(candidate_count - 1, 0, -1):
+            r_list.append(c)
+            if c is not None:
+                c = parents[i][str(c)]
         r_list.append(c)
-        if c is not None:
-            c = parents[i][str(c)]
-    r_list.append(c)
+    except ValueError:
+        r_list = [None for x in range(len(candidates))]
 
     return r_list[::-1]
 
