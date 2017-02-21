@@ -157,8 +157,7 @@ def closest_by_heading(road_links, probe_heading):
 t0 = time.time()
 
 # sample only first sample_size to make computation faster
-sample_size = 1000
-# sample_size = len(probe_data) # for all data
+sample_size = len(probe_data) # for all data
 
 # add road link
 probe_data['linkPVID'] = 0
