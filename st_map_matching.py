@@ -26,43 +26,7 @@ import dist_functions as dist
 #DATA_DIR = '../data'
 DATA_DIR = 'probe_data_map_matching'
 
-# GOOGLE_MAPS_KEY = ''
-# with open('config.json') as data_file:
-#     data = json.load(data_file)
-#     GOOGLE_MAPS_KEY = data['google-maps-key']
-
 FRAME = nv.FrameE(a=6371e3, f=0)
-
-# Utility functions
-def bearing(start, end):
-    """
-    Computes the bearing in degrees between two geopoints
-
-    Inputs:
-        start (tuple of lat, long): starting geolocation
-        end (tuple of lat, long): ending geolocation
-
-    Outputs:
-        (float): bearing in degrees between start and end
-    """
-    phi_1 = math.radians(start[0])
-    phi_2 = math.radians(end[0])
-    lambda_1 = math.radians(start[1])
-    lambda_2 = math.radians(end[1])
-
-    x = math.cos(phi_2) * math.sin(lambda_2 - lambda_1)
-    y = math.cos(phi_1) * math.sin(phi_2) - (math.sin(phi_1) * math.cos(phi_2) * math.cos(lambda_2 - lambda_1))
-
-    return (math.degrees(math.atan2(x, y)) + 360) % 360
-
-probe_headers = ['sampleID',
-             'dateTime',
-             'sourceCode',
-             'latitude',
-             'longitude',
-             'altitude',
-             'speed',
-             'heading']
 
 probe_data = pd.read_csv(os.path.join(DATA_DIR, 'Partition6467ProbePoints.csv'), header=None, names=probe_headers)
 probe_data.drop_duplicates(inplace=True)
