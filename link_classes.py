@@ -1,9 +1,14 @@
 import os
 import csv
+
+import nvector as nv
+
 import numpy as np
 from functools import reduce
 
+
 DATA_DIR = "probe_data_map_matching"
+FRAME = nv.FrameE(a=6371e3, f=0)
 
 class RoadLink(object):
     """Tiny class to hold road link data
@@ -25,10 +30,14 @@ class RoadLink(object):
         self.linkPVID = data_row['linkPVID']
         self.refNodeID = data_row['refNodeID']
         self.nrefNodeID = data_row['nrefNodeID']
+        self.direction = data_row['directionOfTravel']
         lat_lon_points = [[float(j) for j in i.split('/')[:2]] for i in data_row['shapeInfo'].split('|')]
         self.refLatLon = lat_lon_points[0]
         self.nrefLatLon = lat_lon_points[-1]
         self.avgLatLong = reduce(np.add, lat_lon_points) / len(lat_lon_points)
+
+        self.refFrame = FRAME.GeoPoint(self.refLatLon[0], self.refLatLon[1], degrees=True)
+        self.nrefFrame = FRAME.GeoPoint(self.nrefLatLon[0], self.nrefLatLon[1], degrees=True)
 
 class LinkDatabase(object):
     """Class to reduce the amount of links necessary to compare to when matching
@@ -56,14 +65,16 @@ class LinkDatabase(object):
         Returns:
             a list of RoadLink objects
         """
-        rounded_lat = round(probe_lat, ndigits=1)
-        rounded_lon = round(probe_lon, ndigits=1)
+        rounded_lat = round(float(probe_lat), ndigits=2)
+        rounded_lon = round(float(probe_lon), ndigits=2)
 
         links_to_return = []
-        for i in [-0.1, 0, 0.1]:
-            for j in [-0.1, 0, 0.1]:
+
+        for i in [-0.01, 0, 0.01]:
+            for j in [-0.01, 0, 0.01]:
                 try:
-                    links_to_return += self.link_dict[(str(round(rounded_lat + i, ndigits=1)), str(round(rounded_lon + j, ndigits=1)))]
+                    links_to_return += self.link_dict[(str(round(rounded_lat+i, ndigits=2)), str(round(rounded_lon+j, ndigits=2)))]
+
                 except KeyError:
                     pass
         return links_to_return
@@ -79,8 +90,8 @@ class LinkDatabase(object):
         Returns:
             None
         """
-        new_lat = str(round(road_link.refLatLon[0], ndigits=1))
-        new_lon = str(round(road_link.refLatLon[1], ndigits=1))
+        new_lat = str(round(road_link.refLatLon[0], ndigits=2))
+        new_lon = str(round(road_link.refLatLon[1], ndigits=2))
 
         try:
             self.link_dict[(new_lat, new_lon)] += [road_link]
