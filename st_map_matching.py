@@ -7,17 +7,14 @@ import multiprocessing as mp
 import itertools
 import time
 import json
-import gmplot
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import nvector as nv
 
 from datetime import datetime
 from haversine import haversine
 from functools import reduce
-from IPython.display import IFrame
 from collections import namedtuple
 
 # Custom classes
