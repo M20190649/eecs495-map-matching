@@ -23,8 +23,10 @@ class RoadNetworkNode(object):
         self.linkPVID = link_pvid
         self.non_ref_id = non_ref_id
         self.neighbors = []
+        self.start = self.coordinates[0]
+        self.end = self.coordinates[-1]
         try:
-            self.neighbors += [id_map[non_ref_id]]
+            self.neighbors = id_map[non_ref_id]
         except KeyError:
             # print('Missing edge/node target: {}, skipping...'.format(non_ref_id))
             pass
@@ -79,7 +81,7 @@ if __name__ == '__main__':
         rdr = csv.DictReader(csvfile, delimiter=',', fieldnames=link_headers)
         for r in rdr:
             try:
-                node_id_map[r['refNodeID']] += r['linkPVID']
+                node_id_map[r['refNodeID']] += [r['linkPVID']]
             except KeyError:
                 node_id_map[r['refNodeID']] = [r['linkPVID']]
 

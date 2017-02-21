@@ -1,5 +1,7 @@
 import os
 import csv
+import numpy as np
+from functools import reduce
 
 DATA_DIR = "probe_data_map_matching"
 
@@ -26,6 +28,7 @@ class RoadLink(object):
         lat_lon_points = [[float(j) for j in i.split('/')[:2]] for i in data_row['shapeInfo'].split('|')]
         self.refLatLon = lat_lon_points[0]
         self.nrefLatLon = lat_lon_points[-1]
+        self.avgLatLong = reduce(np.add, lat_lon_points) / len(lat_lon_points)
 
 class LinkDatabase(object):
     """Class to reduce the amount of links necessary to compare to when matching
@@ -57,9 +60,12 @@ class LinkDatabase(object):
         rounded_lon = round(probe_lon, ndigits=1)
 
         links_to_return = []
-        for i in [-0.1, 0, 0.1]:
-            for j in [-0.1, 0, 0.1]:
-                links_to_return += self.link_dict[(str(rounded_lat+i), str(rounded_lon+j))]
+        for i in [-0.01, 0, 0.01]:
+            for j in [-0.01, 0, 0.01]:
+                try:
+                    links_to_return += self.link_dict[(str(round(rounded_lat+i, ndigits=2)), str(round(rounded_lon+j, ndigits=2)))]
+                except KeyError:
+                    pass
         return links_to_return
 
     def insert_link(self, road_link):
