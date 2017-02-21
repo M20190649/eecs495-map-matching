@@ -21,7 +21,8 @@ import link_classes as lc
 import dist_functions as dist
 
 # Constants
-DATA_DIR = '../data'
+#DATA_DIR = '../data'
+DATA_DIR = 'probe_data_map_matching'
 
 FRAME = nv.FrameE(a=6371e3, f=0)
 
@@ -184,8 +185,8 @@ def link_road_parallel(indicies):
 N_CORES = mp.cpu_count()
 C_SIZE = math.ceil(sample_size / N_CORES)
 
-pool = mp.Pool(N_CORES)
-r = pool.map(link_road_parallel, [[(C_SIZE * i), ((i + 1) * C_SIZE)] for i in range(N_CORES)])
+with mp.Pool(N_CORES) as pool:
+    r = pool.map(link_road_parallel, [[(C_SIZE * i), ((i + 1) * C_SIZE)] for i in range(N_CORES)])
 linkings = list(itertools.chain.from_iterable(r))
 
 # assign values to probe_data
@@ -209,18 +210,46 @@ probe_data = probe_data.merge(link_data[['linkPVID', 'directionOfTravel', 'shape
 probe_data['distFromRef'] = math.nan
 probe_data['distFromLink'] = math.nan
 
-for row in probe_data.itertuples():
-    if type(row.shapeArray) is list:
-        probe_point = FRAME.GeoPoint(float(row.latitude), float(row.longitude), degrees=True)
+# pickle the probe data
+probe_data.to_pickle('pickled_probe_data.pickle')
 
-        link_refFrame = FRAME.GeoPoint(row.shapeArray[0][0], row.shapeArray[0][1], degrees=True)
-        link_nrefFrame = FRAME.GeoPoint(row.shapeArray[-1][0], row.shapeArray[-1][1], degrees=True)
+probe_data_dict_list = probe_data.to_dict(orient='records')
 
-        probe_data.loc[row.Index, 'distFromRef'] = dist.dist_to_ref(probe_point, link_refFrame)
-        probe_data.loc[row.Index, 'distFromLink'] = dist.dist_to_link(probe_point, link_refFrame, link_nrefFrame)
+def find_nearest_link(probe_dict):
+    probe_point = FRAME.GeoPoint(float(probe_dict['latitude']),
+                                 float(probe_dict['longitude']), degrees=True)
+    return_probe = {k:v for k, v in probe_dict.items()}
+    try:   
+        link_refFrame = FRAME.GeoPoint(probe_dict['shapeArray'][0][0], probe_dict['shapeArray'][0][1], degrees=True)
+        link_nrefFrame = FRAME.GeoPoint(probe_dict['shapeArray'][-1][0], probe_dict['shapeArray'][-1][1], degrees=True)
 
-# remove unnecessary columns
-probe_data = probe_data.drop(['shapeArray'], axis=1)
+        return_probe['distFromRef'] = dist.dist_to_ref(probe_point, link_refFrame)
+        return_probe['distFromLink'] = dist.dist_to_link(probe_point, link_refFrame, link_nrefFrame)
 
-# save out file
-probe_data.to_csv('./trajectory_linked_data.csv', index=False)
+    except TypeError:
+        pass
+        
+    return return_probe
+
+with mp.Pool(63) as pool:
+    filled = pool.map(find_nearest_link, probe_data_dict_list)
+
+new_headers = ['sampleID',
+              'dateTime',
+               'latitude',
+               'longitude',
+               'altitude',
+               'heading',
+               'sourceCode',
+               'speed',
+               'directionOfTravel',
+               'distFromLink',
+               'distFromRef',
+               'linkPVID']
+
+
+with open(os.path.join(DATA_DIR, "heading_match.csv"), 'w') as csvfile:
+    wtr = csv.writer(csvfile, delimiter=',')
+    wtr.writerow(new_headers)
+    for i in filled:
+        wtr.writerow([i[v] for v in new_headers])
