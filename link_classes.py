@@ -65,7 +65,7 @@ class LinkDatabase(object):
                 try:
                     links_to_return += self.link_dict[(str(round(rounded_lat + i, ndigits=1)), str(round(rounded_lon + j, ndigits=1)))]
                 except KeyError:
-                    print('keyerror')
+                    pass
         return links_to_return
 
     def insert_link(self, road_link):
