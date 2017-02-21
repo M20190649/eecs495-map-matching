@@ -93,7 +93,8 @@ ENV/
 *.pickle
 
 # Graphs
-graphs/*
+*.html
+*.png
 
 # API Keys
 config.json
