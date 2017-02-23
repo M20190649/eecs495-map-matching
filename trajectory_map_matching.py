@@ -21,8 +21,8 @@ import link_classes as lc
 import dist_functions as dist
 
 # Constants
-#DATA_DIR = '../data'
-DATA_DIR = 'probe_data_map_matching'
+DATA_DIR = '../data'
+# DATA_DIR = 'probe_data_map_matching'
 
 FRAME = nv.FrameE(a=6371e3, f=0)
 
@@ -47,6 +47,9 @@ def bearing(start, end):
     y = math.cos(phi_1) * math.sin(phi_2) - (math.sin(phi_1) * math.cos(phi_2) * math.cos(lambda_2 - lambda_1))
 
     return (math.degrees(math.atan2(x, y)) + 360) % 360
+
+# time code
+t0 = time.time()
 
 probe_headers = ['sampleID',
                  'dateTime',
@@ -115,7 +118,7 @@ def nearest_n_segments(lat, long, n):
     # find nearest n links
     output = []
     try:
-        link_search = [(x, haversine(x.refLatLon, (lat, long))) for x in link_db.get_links(lat, long)]
+        link_search = [(x, haversine(x.avgLatLong, (lat, long))) for x in link_db.get_links(lat, long)]
         link_search.sort(key=operator.itemgetter(1))
         link_search = link_search[0:n]
 
@@ -148,14 +151,16 @@ def closest_by_heading(road_links, probe_heading):
     # compute metric from distance and difference in angle. check both directions
     link_headings['angle_diff'] = pd.DataFrame([np.abs(link_headings['heading'] - probe_heading), \
                                                 np.abs(link_headings['flipped_heading'] - probe_heading)]).min()
-    link_headings['metric'] = link_headings['distances'] * link_headings['angle_diff']
+
+    # scale distances and angle
+    link_headings['distances'] = link_headings['distances'] / max(link_headings['distances'])
+    link_headings['angle_diff'] = link_headings['angle_diff'] / 360
+
+    link_headings['metric'] = (link_headings['distances'] + 0.5*link_headings['angle_diff']) / 2
 
     # pick one with lowest metric and return its linkPVID
     link_headings = link_headings.sort_values(by='metric')
     return link_headings.head(1)['linkPVID']
-
-# time code
-t0 = time.time()
 
 # sample only first sample_size to make computation faster
 sample_size = len(probe_data) # for all data
@@ -172,7 +177,7 @@ def link_road_parallel(indicies):
         indicies (list of floats): indicies to find nearest link for
     """
     output = [(0, 0) for x in range(indicies[1] - indicies[0])]
-    n = 3
+    n = 5
     counter = 0
     for row in probe_data[indicies[0]:indicies[1]].itertuples():
         output[counter] = (row.Index, closest_by_heading(nearest_n_segments(row.latitude, row.longitude, n),
@@ -185,17 +190,13 @@ def link_road_parallel(indicies):
 N_CORES = mp.cpu_count()
 C_SIZE = math.ceil(sample_size / N_CORES)
 
-with mp.Pool(N_CORES) as pool:
-    r = pool.map(link_road_parallel, [[(C_SIZE * i), ((i + 1) * C_SIZE)] for i in range(N_CORES)])
+pool = mp.Pool(N_CORES)
+r = pool.map(link_road_parallel, [[(C_SIZE * i), ((i + 1) * C_SIZE)] for i in range(N_CORES)])
 linkings = list(itertools.chain.from_iterable(r))
 
 # assign values to probe_data
 stacked_values = np.dstack(linkings)[0]
 probe_data.loc[stacked_values[0], 'linkPVID'] = stacked_values[1]
-
-# finish timing
-t1 = time.time()
-print(str((t1 - t0) / 60) + ' minutes for ' + str(sample_size) + ' data points using ' + str(N_CORES) + ' CPU threads.')
 
 # remove id column
 try:
@@ -204,7 +205,8 @@ except KeyError:
     pass
 
 # add direction and shape array columns from link_data to probe_data
-probe_data = probe_data.merge(link_data[['linkPVID', 'directionOfTravel', 'shapeArray']], how='left', on=['linkPVID'])
+probe_data = probe_data.merge(link_data[['linkPVID', 'directionOfTravel', 'shapeArray']], \
+                              how='left', on=['linkPVID'])
 
 # add dist from ref and link
 probe_data['distFromRef'] = math.nan
@@ -219,19 +221,21 @@ def find_nearest_link(probe_dict):
     probe_point = FRAME.GeoPoint(float(probe_dict['latitude']),
                                  float(probe_dict['longitude']), degrees=True)
     return_probe = {k:v for k, v in probe_dict.items()}
-    try:   
-        link_refFrame = FRAME.GeoPoint(probe_dict['shapeArray'][0][0], probe_dict['shapeArray'][0][1], degrees=True)
-        link_nrefFrame = FRAME.GeoPoint(probe_dict['shapeArray'][-1][0], probe_dict['shapeArray'][-1][1], degrees=True)
+    try:
+        link_refFrame = FRAME.GeoPoint(probe_dict['shapeArray'][0][0], \
+                                       probe_dict['shapeArray'][0][1], degrees=True)
+        link_nrefFrame = FRAME.GeoPoint(probe_dict['shapeArray'][-1][0], \
+                                        probe_dict['shapeArray'][-1][1], degrees=True)
 
         return_probe['distFromRef'] = dist.dist_to_ref(probe_point, link_refFrame)
         return_probe['distFromLink'] = dist.dist_to_link(probe_point, link_refFrame, link_nrefFrame)
 
     except TypeError:
         pass
-        
+
     return return_probe
 
-with mp.Pool(63) as pool:
+with mp.Pool(N_CORES) as pool:
     filled = pool.map(find_nearest_link, probe_data_dict_list)
 
 new_headers = ['sampleID',
@@ -248,8 +252,12 @@ new_headers = ['sampleID',
                'linkPVID']
 
 
-with open(os.path.join(DATA_DIR, "heading_match.csv"), 'w') as csvfile:
+with open(os.path.join(DATA_DIR, 'heading_match.csv'), 'w') as csvfile:
     wtr = csv.writer(csvfile, delimiter=',')
     wtr.writerow(new_headers)
     for i in filled:
         wtr.writerow([i[v] for v in new_headers])
+
+# finish timing
+t1 = time.time()
+print(str((t1 - t0) / 60) + ' minutes for ' + str(sample_size) + ' data points using ' + str(N_CORES) + ' CPU threads.')
